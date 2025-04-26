@@ -1,4 +1,4 @@
-df = excel_reader(path="../data/operations.xlsx") #(УБРАТЬ)!!!!!!!!!!!!!!!!!!!!!!
+# df = excel_reader(path="../data/operations.xlsx") #(УБРАТЬ)!!!!!!!!!!!!!!!!!!!!!!
 
 
 

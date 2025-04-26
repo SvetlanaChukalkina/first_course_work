@@ -13,8 +13,8 @@ from typing import Any
 API_KEY = os.getenv("API_KEY")
 
 
-def excel_reader(path: str) -> pd.DataFrame:
-    """Cчитывает данные из Excel-файла"""
+def excel_reader(path:str="../data/operations.xlsx") -> pd.DataFrame:
+    """Cчитывает данные из Excel-файла, возвращает датафрейм"""
     try:
         excel_data = pd.read_excel(path)
         return excel_data
@@ -22,62 +22,67 @@ def excel_reader(path: str) -> pd.DataFrame:
         raise err
 
 
-def json_reader(path: str):
+def json_reader(path: str) -> None:
     """Cчитывает данные из JSON-файла"""
     with open(path, 'r', encoding="utf-8") as json_file:
         return json.load(json_file)
 
 
 def date_replace(from_date: datetime.datetime, param):
+    """Преобразовывает дату в соответствии с выбранным пользователем параметром"""
+    while True:
+        if param == "W":
+            return from_date - datetime.timedelta(from_date.weekday())
+            break
+        elif param == "M":
+            return datetime.datetime(from_date.year, from_date.month, 1)
+            break
+        elif param == "Y":
+            return datetime.datetime(from_date.year, 1, 1)
+            break
+        elif param == "ALL":
+            return datetime.datetime(2000, 1, 1)
+            break
+        else:
+            print("Введите один из предложенных параметров")
 
-    if param == "W":
-        return from_date - datetime.timedelta(from_date.weekday())
-    elif param == "M":
-        return datetime.datetime(from_date.year, from_date.month, 1)
-    elif param == "Y":
-        return datetime.datetime(from_date.year, 1, 1)
-    elif param == "ALL":
-        return datetime.datetime(2000, 1, 1)
 
-
-def method_name(param, to_date):
+def filter_operations(param, to_date):
+    """Отбирает операции, соответствующие выбранному периоду"""
     df = excel_reader(path="data/operations.xlsx")
-    # Запрос дат
     from_date = datetime.datetime.strptime(to_date, '%d.%m.%Y')
-    start_date = date_replace(from_date, param)
+    from_date_formatted = date_replace(from_date, param)
     df['Дата операции'] = pd.to_datetime(df['Дата операции'], dayfirst=True)
-    df_for_date = df[(df['Дата операции'] <= from_date) & (df['Дата операции'] >= start_date)]
+    df_for_date = df[(df['Дата операции'] <= from_date) & (df['Дата операции'] >= from_date_formatted)]
     return df_for_date
 
 
 def data_expences(df: pd.DataFrame):
-    """Выводит топ-7 категорий по сумме расходов"""
-    total_dict = {"total_amount": 0, "main": [], "transfers_and_cash": []}
-    sum_ostalnie = 0
-    # df = df.fillna("")
-    out_categories_df = df.groupby("Категория", dropna=True).agg({"Сумма операции": "sum"}).abs()
-    cash_transfers = df[(df["Категория"] == "Наличные") | (df["Категория"] == "Переводы")].groupby("Категория",
-                                                                                                   dropna=True).agg(
+    """Выводит общую сумму расходов, топ-7 категорий по сумме расходов,
+    отдельно выводит расходы по категориям 'Наличные' и 'Переводы',
+    суммирует расходы по категориям, не входящим в топ-7, в категорию 'Остальное' """
+    total_expences_dict = {"total_amount": 0, "main": [], "transfers_and_cash": []}
+    others_sum = 0
+    expences_categories_df = df.groupby("Категория", dropna=True).agg({"Сумма операции": "sum"}).abs()
+    sum_cash_and_transfers = df[(df["Категория"] == "Наличные") | (df["Категория"] == "Переводы")].groupby("Категория",
+                                                                                                           dropna=True).agg(
         {"Сумма операции": "sum"}).abs()
-
-    sorted_sum = out_categories_df.sort_values(by="Сумма операции", ascending=False)
-    top_seven, not_top_seven = sorted_sum[:7], sorted_sum[7:]
+    sorted_sum = expences_categories_df.sort_values(by="Сумма операции", ascending=False)
+    top_seven_categories, others_categories = sorted_sum[:7], sorted_sum[7:]
     for out, cat in sorted_sum.iterrows():
-        total_dict["total_amount"] += int(cat["Сумма операции"])
-
-    for top, sev in top_seven.iterrows():
-        total_dict["main"].append(
+        total_expences_dict["total_amount"] += int(cat["Сумма операции"])
+    for top, sev in top_seven_categories.iterrows():
+        total_expences_dict["main"].append(
             {"category": "Без категории" if not top else top, "amount": int(sev["Сумма операции"])})
+    for not_top, not_sev in others_categories.iterrows():
+        others_sum += int(not_sev["Сумма операции"])
 
-    for not_top, not_sev in not_top_seven.iterrows():
-        sum_ostalnie += int(not_sev["Сумма операции"])
+    for cash, transfer in sum_cash_and_transfers.iterrows():
+        total_expences_dict["transfers_and_cash"].append({"category": cash, "amount": int(transfer["Сумма операции"])})
 
-    for cash, transfer in cash_transfers.iterrows():
-        total_dict["transfers_and_cash"].append({"category": cash, "amount": int(transfer["Сумма операции"])})
+    total_expences_dict["main"].append({"category": "Остальное", "amount": others_sum})
 
-    total_dict["main"].append({"category": "Остальное", "amount": sum_ostalnie})
-
-    return total_dict
+    return total_expences_dict
 
 
 def data_income(df: pd.DataFrame):
@@ -92,27 +97,18 @@ def data_income(df: pd.DataFrame):
     return data
 
 
-def convert(symbol:str, amount:int) -> Any:
+def convert(symbol) -> Any:
     """Обращается к внешнему API для получения курса валют и конвертации суммы в рубли"""
-    url = "https://www.alphavantage.co/query"
-    payload = {"function": "TIME_SERIES_WEEKLY", "symbol": symbol, "amount": amount, "apikey": API_KEY}
+    url = "https://api.twelvedata.com/exchange_rate"
+    payload = {"symbol": symbol, "apikey": API_KEY}
     response = requests.get(url, params=payload)
-
     status_code = response.status_code
     if status_code == 200:
         resp_data = response.json()
-        super_data = resp_data["Weekly Time Series"]
-        index_key = list(super_data.keys())[0]
-        return super_data[index_key]["2. high"]
+        super_data = resp_data
+        return super_data.get("rate")
     else:
         raise Exception("Ошибка запроса")
-print(convert(symbol="USD", amount=100))
-
-    #     super_data = resp_data["Weekly Time Series"]
-    #     index_key = list(super_data.keys())[0]
-    #     return super_data[index_key]["2. high"]
-    # else:
-    #     raise Exception("Ошибка запроса")
 
 
 def read_user_settings():
@@ -125,16 +121,15 @@ def read_user_settings():
 
 def stocks_api(symbol):
 
-    url = "https://www.alphavantage.co/query"
-    payload = {"function": "GLOBAL_QUOTE", "symbol": symbol}
+    url = "https://api.twelvedata.com/price"
+    payload = {"symbol": symbol, "apikey": API_KEY}
     response = requests.get(url, params=payload)
 
     status_code = response.status_code
     if status_code == 200:
         data = response.json()
-        # print(data)
-        get_data = data.get("Global Quote", {}).get("05. price", 0)
-        return float(get_data)
+        get_data = data.get('price')
+        return get_data
     else:
         raise Exception("Ошибка запроса")
 
@@ -145,7 +140,7 @@ def iter_user_settings():
     currency_rates = []
     stocks_convert = []
     for currency in user_currencies:
-        convert_currency = convert(currency, amount=10)
+        convert_currency = convert(f"{currency}/RUB")
         currency_rates.append({
         "currency": currency,
         "rate": convert_currency
@@ -158,5 +153,4 @@ def iter_user_settings():
         })
 
     return currency_rates, stocks_convert
-
-
+print(iter_user_settings())
