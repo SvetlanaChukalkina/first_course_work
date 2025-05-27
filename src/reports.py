@@ -6,7 +6,7 @@ from typing import Optional
 import pandas as pd
 
 reports_logger = logging.getLogger()
-reports_file_handler = logging.FileHandler("../logs/logs.log", "w")
+reports_file_handler = logging.FileHandler("logs/logs.log", "w")
 reports_file_formatter = logging.Formatter("%(asctime)s %(filename)s %(levelname)s: %(message)s")
 reports_file_handler.setFormatter(reports_file_formatter)
 reports_logger.addHandler(reports_file_handler)

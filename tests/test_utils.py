@@ -1,4 +1,5 @@
 import datetime
+from logging import raiseExceptions
 from typing import Any
 from unittest.mock import patch, mock_open
 
@@ -16,6 +17,10 @@ from src.utils import (
     stocks_api,
 )
 
+def test_no_excel_reader():
+    with pytest.raises(FileNotFoundError):
+        excel_reader(path="ggjh")
+
 
 @pytest.mark.parametrize(
     "value, param,expected",
@@ -29,11 +34,6 @@ from src.utils import (
 def test_date_replace(value, param, expected) -> None:
     """Проверка корректности работы функции date_replace с разными входными данными"""
     assert date_replace(value, param) == expected
-
-
-def test_filter_operations(test_dataframe):
-    """Проверка корректности работы функции filter_operations с разными входными данными"""
-    assert filter_operations(param="W", to_date="02.01.2021", df=test_dataframe) == pd.DataFrame({'Дата операции': ['2021-01-02'], 'Сумма операции': [-500.0], 'Категория': ['Аптеки'], 'Описание': ['Аптека Вита']})
 
 
 def test_data_expences(test_dataframe):

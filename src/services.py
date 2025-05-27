@@ -5,7 +5,7 @@ import re
 import pandas as pd
 
 services_logger = logging.getLogger()
-services_file_handler = logging.FileHandler("../logs/logs.log", "w")
+services_file_handler = logging.FileHandler("logs/logs.log", "w")
 services_file_formatter = logging.Formatter("%(asctime)s %(filename)s %(levelname)s: %(message)s")
 services_file_handler.setFormatter(services_file_formatter)
 services_logger.addHandler(services_file_handler)
