@@ -1,7 +1,9 @@
+from pandas import DataFrame
+
 from src.services import search_transfers
 
 
-def test_search_transfers(test_dataframe):
+def test_search_transfers(test_dataframe: DataFrame) -> None:
     """Проверка корректности работы функции search_transfers"""
     assert (search_transfers(sorted_df=test_dataframe)) == (
         "[\n"

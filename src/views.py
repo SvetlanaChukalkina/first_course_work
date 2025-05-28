@@ -4,7 +4,7 @@ from typing import Any
 from src.utils import data_expences, data_income, filter_operations, iter_user_settings
 
 
-def main(to_date: Any, param: str = "M"):
+def main(to_date: Any, param: str = "M") -> Any:
     """Запрос дат и вывод информации за указанный период"""
     sorted_date_excel = filter_operations(param, to_date)
     result_expences = data_expences(sorted_date_excel)

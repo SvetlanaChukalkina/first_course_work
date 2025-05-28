@@ -1,13 +1,13 @@
-from typing import Any
-
 import datetime
 import json
 import logging
 import os
+from typing import Any
 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+from pandas import DataFrame
 
 from config import PATH_XLSX, USER_SETTINGS
 
@@ -34,7 +34,7 @@ def excel_reader(path: str = PATH_XLSX) -> pd.DataFrame:
         raise err
 
 
-def date_replace(from_date: datetime.datetime, param):
+def date_replace(from_date: Any, param: str) -> Any | str:
     """Преобразовывает дату в соответствии с выбранным пользователем параметром"""
     if param == "W":
         utils_logger.info("Selected interval: from beginning of the week")
@@ -53,7 +53,7 @@ def date_replace(from_date: datetime.datetime, param):
         return "Выбран неверный параметр"
 
 
-def filter_operations(param, to_date, df = excel_reader()):
+def filter_operations(param: str, to_date: str, df: DataFrame = excel_reader()) -> DataFrame:
     """Отбирает операции, соответствующие выбранному периоду"""
     to_date_formatted = datetime.datetime.strptime(to_date, "%d.%m.%Y")
     from_date_formatted = date_replace(to_date_formatted, param)
@@ -63,7 +63,7 @@ def filter_operations(param, to_date, df = excel_reader()):
     return df_for_date
 
 
-def data_expences(df_data: pd.DataFrame):
+def data_expences(df_data: DataFrame) -> dict[str, int | list[Any]]:
     """Выводит общую сумму расходов, топ-7 категорий по сумме расходов,
     отдельно выводит расходы по категориям 'Наличные' и 'Переводы',
     суммирует расходы по категориям, не входящим в топ-7, в категорию 'Остальное'"""
@@ -98,7 +98,7 @@ def data_expences(df_data: pd.DataFrame):
     return total_expences_dict
 
 
-def data_income(income_df_data: pd.DataFrame):
+def data_income(income_df_data: DataFrame) -> dict[str, int | list]:
     """Рассчитывает сумму поступлений на счет (положительное изменение суммы)"""
     data = {"total_amount": 0, "main": []}
     income_df = (
@@ -114,7 +114,7 @@ def data_income(income_df_data: pd.DataFrame):
     return data
 
 
-def convert(symbol) -> Any:
+def convert(symbol: Any) -> Any:
     """Обращается к внешнему API для получения курса валют и конвертации суммы в рубли"""
     url = "https://api.twelvedata.com/exchange_rate"
     payload = {"symbol": symbol, "apikey": API_KEY}
@@ -129,7 +129,7 @@ def convert(symbol) -> Any:
         raise Exception("Ошибка запроса")
 
 
-def stocks_api(symbol):
+def stocks_api(symbol: str) -> Any:
     """Обращается к внешнему API для получения стомости акций"""
     url = "https://api.twelvedata.com/price"
     payload = {"symbol": symbol, "apikey": API_KEY}
@@ -145,7 +145,7 @@ def stocks_api(symbol):
         raise Exception("Ошибка запроса")
 
 
-def read_user_settings():
+def read_user_settings() -> Any:
     """Функция чтения пользовательского файла с наименованиями
     валют и акций"""
     try:

@@ -12,7 +12,7 @@ services_logger.addHandler(services_file_handler)
 services_logger.setLevel(logging.DEBUG)
 
 
-def search_transfers(sorted_df: pd.DataFrame):
+def search_transfers(sorted_df: pd.DataFrame) -> str:
     """ "Поиск транзакций, содаржащим в описании телефонные номера"""
     transfers_list = sorted_df.to_dict(orient="records").copy()
     search_result = []

@@ -1,7 +1,7 @@
 import datetime
 import json
 import logging
-from typing import Optional
+from typing import Any
 
 import pandas as pd
 
@@ -13,8 +13,11 @@ reports_logger.addHandler(reports_file_handler)
 reports_logger.setLevel(logging.DEBUG)
 
 
-def write_to_file(func):
-    def wrapper(*args, **kwargs):
+def write_to_file(func: Any) -> None:
+    """Декоратор для функций-отчетов, который записывает в файл результат,
+    который возвращает функция, формирующая отчет"""
+
+    def wrapper(*args: Any, **kwargs: Any) -> None:
         formatted_file = json.dumps(func(*args, **kwargs), indent=4, ensure_ascii=False)
         with open("reports.json", "w", encoding="UTF-8") as json_file:
             json_file.write(formatted_file)
@@ -23,7 +26,10 @@ def write_to_file(func):
 
 
 @write_to_file
-def generation_reports(selected_category: str = None, countdown_date: Optional[str] = None, transactions_df=None):
+def generation_reports(
+    selected_category: Any = None, countdown_date: Any = None, transactions_df: Any = None
+) -> str | list:
+    """Возвращает траты по выбранной категории за последние 3 месяца от заданной даты"""
     if countdown_date is None:
         countdown_date_formatted = datetime.datetime.now()
         reports_logger.info("Date changed to the current one")
